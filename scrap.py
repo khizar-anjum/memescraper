@@ -3,29 +3,36 @@ import re
 import subprocess
 import time
 import sys
+from auth_file import reddit
+import prawcore
 
 urls="https://old.reddit.com/r/dankmemes/"
 
 i=0
-num = input("How many pages would you like to download(25 memes per page)?")
+num = input("How many memes would you like to download?")
+subReddit = reddit.subreddit('dankmemes');
 if num<1:
 	sys.exit("Number of pages should be > 0")
 else :
 	while i<num:
-		these_regex="data-url=\"(.+?)\""
-		pattern=re.compile(these_regex)
-		htmlfile=urllib.urlopen(urls)
-		htmltext=htmlfile.read()
-		titles=re.findall(pattern,htmltext)
-		for s in titles:
-			com = "wget --no-check-certificate " + s
-			subprocess.call(com,shell=True)
-		regex1 = "next-button.+?\"(.+?)\""
-		pattern1 = re.compile(regex1)
-		link1=re.findall(pattern1,htmltext)
-		if(len(link1)==0):
-			print "Something went wrong for i = %d. trying again..."%i
-			time.sleep(3)
-		else:
-			urls = link1[0]
-			i+=1
+		current_timestamp = time.time()
+		# 60 seconds * 60 minutes * 24 hours * 20 days = 20 days
+		prev_timestamp = current_timestamp - (60 * 60 * 1 * 1)
+		query = 'timestamp:{}..{}'.format(current_timestamp, prev_timestamp)+'&force_search_stack=cloudsearch'
+		results = reddit.subreddit('dankmemes').search(query)
+		try: 
+			for submission in results:
+				com = "wget " + submission.url + " --no-check-certificate -O " + submission.title + ".jpg";
+				subprocess.call(com,shell=True)
+			i+=60
+		except prawcore.exceptions.ServerError as e:
+			lastexception = e;
+			print 'exception occured: ' + str(e)
+			time.sleep(15);
+		
+
+
+    
+
+
+
